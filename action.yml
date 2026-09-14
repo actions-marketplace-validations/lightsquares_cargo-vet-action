@@ -1,0 +1,115 @@
+name: "cargo vet"
+description: "Install cargo-vet from an attested build and run `cargo vet` on a Rust project"
+author: "Light Squares"
+
+inputs:
+  working-directory:
+    description: "Directory containing the project's Cargo.toml"
+    required: false
+    default: "."
+  registries:
+    description: >-
+      Comma-separated audit registries to import when the project has no
+      supply-chain/ directory yet. Known names: google, mozilla,
+      bytecodealliance, lightsquares-canary. Custom: name=https://example.com/audits.toml
+    required: false
+    default: "google,mozilla,bytecodealliance,lightsquares-canary"
+  unsafe-only-report-warnings:
+    description: "If true, an unvetted dependency set emits a warning instead of failing the job"
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Install cargo-vet
+      shell: bash
+      env:
+        # Built from crates.io with Light Squares Attestable Builds (see README).
+        # Bump all three together when releasing a new cargo-vet version.
+        CARGO_VET_VERSION: "0.10.2"
+        CARGO_VET_URL: "https://github.com/lightsquares/cargo-vet-action/releases/download/cargo-vet-v0.10.2/cargo-vet-x86_64-unknown-linux-musl"
+        CARGO_VET_SHA256: "TODO_FILL_IN_AFTER_ATTESTED_BUILD"
+      run: |
+        set -euo pipefail
+        if [ "$(uname -s)-$(uname -m)" != "Linux-x86_64" ]; then
+          echo "::error::cargo-vet-action supports Linux x86_64 runners only (got $(uname -s)-$(uname -m))"
+          exit 1
+        fi
+        dir="$RUNNER_TEMP/cargo-vet-bin"
+        mkdir -p "$dir"
+        curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --retry 3 \
+          --output "$dir/cargo-vet" "$CARGO_VET_URL"
+        echo "$CARGO_VET_SHA256  $dir/cargo-vet" | sha256sum --check --strict --quiet -
+        chmod +x "$dir/cargo-vet"
+        echo "$dir" >> "$GITHUB_PATH"
+        echo "Installed cargo-vet $CARGO_VET_VERSION (sha256 $CARGO_VET_SHA256)"
+
+    - name: Run cargo vet
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        REGISTRIES: ${{ inputs.registries }}
+        WARN_ONLY: ${{ inputs.unsafe-only-report-warnings }}
+      run: |
+        set -euo pipefail
+
+        registry_url() {
+          case "$1" in
+            google)             echo "https://raw.githubusercontent.com/google/supply-chain/main/audits.toml" ;;
+            mozilla)            echo "https://raw.githubusercontent.com/mozilla/supply-chain/main/audits.toml" ;;
+            bytecodealliance)   echo "https://raw.githubusercontent.com/bytecodealliance/wasmtime/main/supply-chain/audits.toml" ;;
+            lightsquares-canary) echo "https://app.lightsquares.dev/api/canary/audit-toml" ;;
+            *) return 1 ;;
+          esac
+        }
+
+        if [ -d supply-chain ]; then
+          args=(--locked)
+        else
+          mkdir supply-chain
+          {
+            echo '[cargo-vet]'
+            echo 'version = "0.10"'
+          } > supply-chain/config.toml
+          names=""
+          IFS=',' read -ra entries <<< "$REGISTRIES"
+          for entry in "${entries[@]}"; do
+            entry="${entry#"${entry%%[![:space:]]*}"}"
+            entry="${entry%"${entry##*[![:space:]]}"}"
+            [ -n "$entry" ] || continue
+            if [[ "$entry" == *=* ]]; then
+              name="${entry%%=*}"
+              url="${entry#*=}"
+            else
+              name="$entry"
+              url="$(registry_url "$name")" || {
+                echo "::error::unknown registry '$name' (use name=https://... for custom registries)"
+                exit 1
+              }
+            fi
+            if ! [[ "$name" =~ ^[A-Za-z0-9_-]+$ ]]; then
+              echo "::error::invalid registry name '$name'"
+              exit 1
+            fi
+            if ! [[ "$url" =~ ^https://[^[:space:]\"]+$ ]]; then
+              echo "::error::registry '$name' must have an https:// URL"
+              exit 1
+            fi
+            printf '\n[imports.%s]\nurl = "%s"\n' "$name" "$url" >> supply-chain/config.toml
+            names="$names $name"
+          done
+          echo '[audits]' > supply-chain/audits.toml
+          : > supply-chain/imports.lock
+          echo "::notice::No supply-chain/ directory found; bootstrapped a temporary store importing:${names:- (none)}. Run 'cargo vet init' locally to commit a real store."
+          args=()
+        fi
+
+        if cargo vet "${args[@]}"; then
+          exit 0
+        fi
+        if [ "$WARN_ONLY" = "true" ]; then
+          echo "::warning::cargo vet failed (see log); continuing because unsafe-only-report-warnings is enabled"
+          exit 0
+        fi
+        exit 1

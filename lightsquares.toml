@@ -1,0 +1,10 @@
+[source]
+head = "main"
+shallow = true
+
+[build]
+path = "docker/Dockerfile"
+build_cmd = "./build.sh"
+artifacts = [
+  "dist/cargo-vet-x86_64-unknown-linux-musl",
+]
