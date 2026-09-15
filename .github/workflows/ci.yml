@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Committed store is checked with --locked
+        uses: ./
+        with:
+          working-directory: tests/existing-store
+
+      - name: Missing store is bootstrapped from the default registries
+        uses: ./
+        with:
+          working-directory: tests/bootstrap
+
+      - name: Older cargo-vet version works
+        uses: ./
+        with:
+          working-directory: tests/existing-store
+          cargo-vet-version: "0.10.0"
+
+      - name: Unvetted dependency fails the run
+        id: unvetted
+        continue-on-error: true
+        uses: ./
+        with:
+          working-directory: tests/unvetted
+          registries: ""
+
+      - name: Confirm the previous step failed
+        if: steps.unvetted.outcome != 'failure'
+        run: |
+          echo "expected cargo vet to fail for an unvetted dependency"
+          exit 1

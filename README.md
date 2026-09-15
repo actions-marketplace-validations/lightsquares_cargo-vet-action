@@ -1,5 +1,6 @@
 # cargo-vet-action
 
+[![CI](https://github.com/lightsquares/cargo-vet-action/actions/workflows/ci.yml/badge.svg)](https://github.com/lightsquares/cargo-vet-action/actions/workflows/ci.yml)
 [![Light Squares Attestable Builds](https://app.lightsquares.dev/api/badge/lightsquares/cargo-vet-action.svg)](https://app.lightsquares.dev/builds/dashboard?show=lightsquares/cargo-vet-action)
 
 A small, security-focused GitHub Action that installs
@@ -20,6 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: lightsquares/cargo-vet-action@<commit-sha> # v1
+```
+
+To get the current commit SHA of `main`:
+
+```bash
+git ls-remote https://github.com/lightsquares/cargo-vet-action main | cut -f1
 ```
 
 Runs on Linux x86_64 runners with `cargo` on `PATH`, which GitHub's hosted
