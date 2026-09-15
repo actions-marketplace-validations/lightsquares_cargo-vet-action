@@ -32,6 +32,8 @@ git ls-remote https://github.com/lightsquares/cargo-vet-action main | cut -f1
 Runs on Linux x86_64 runners with `cargo` on `PATH`, which GitHub's hosted
 Ubuntu runners provide.
 
+Alternatively, point your agent to the [`SKILL.md`](https://github.com/lightsquares/cargo-vet-action/blob/main/skills/lightsquares-cargo-vet-action/SKILL.md) file.
+
 ### Inputs
 
 | Input | Description | Default | Example |
