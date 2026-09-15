@@ -57,7 +57,8 @@ The `cargo-vet` binaries this action runs are compiled from crates.io with
 which produce a signed, publicly logged proof that each binary was built from
 the source in this repository. The binaries are attached to this repository's
 releases, and the action refuses to run one unless its sha256 matches the
-value recorded in `action.yml`. Anyone can check a release asset at
+value recorded in `scripts/install_cargo_vet.py`. Anyone can check a release
+asset at
 <https://app.lightsquares.dev/verify>. How the builds are set up is
 described in [MAINTAINER.md](MAINTAINER.md).
 

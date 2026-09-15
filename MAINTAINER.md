@@ -12,8 +12,8 @@ in this repository:
 
 The platform hashes the resulting binary, signs a provenance statement, and
 logs it publicly. Each binary is attached to the GitHub Release
-`cargo-vet-v<version>` of this repository, and `action.yml` refuses to run
-it unless its sha256 matches the one recorded for that version.
+`cargo-vet-v<version>` of this repository, and `scripts/install_cargo_vet.py`
+refuses to run it unless its sha256 matches the one recorded for that version.
 
 `main` builds the newest supported version. Every other version lives on a
 branch `build/cargo-vet-<version>` that carries its own `lightsquares.toml`
@@ -67,9 +67,10 @@ dist/cargo-vet-x86_64-unknown-linux-musl --version
    gh release create cargo-vet-vX.Y.Z dist/cargo-vet-x86_64-unknown-linux-musl
    ```
 
-5. On `main`, add the version and its sha256 to the `case` table in
-   `action.yml`, list it in the README input table and in the input
-   description in `action.yml`, and move the `v1` tag once CI is green.
+5. On `main`, add the version and its sha256 to the `SHA256` table in
+   `scripts/install_cargo_vet.py`, list it in the README input table and in
+   the input description in `action.yml`, and move the `v1` tag once CI is
+   green.
 
 ## Tests
 
@@ -78,4 +79,5 @@ in a single job: a committed store whose only dependency is covered by an
 imported registry, checked with `--locked` using both cargo-vet versions,
 a dependency-free project bootstrapped from the default registries, and
 the same `anyhow` dependency with no registries, which must fail. It
-needs the release assets referenced in `action.yml` to be downloadable.
+needs the release assets referenced in `scripts/install_cargo_vet.py` to be
+downloadable.

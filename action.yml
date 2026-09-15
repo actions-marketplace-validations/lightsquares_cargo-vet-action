@@ -30,32 +30,7 @@ runs:
       shell: bash
       env:
         CARGO_VET_VERSION: ${{ inputs.cargo-vet-version }}
-      run: |
-        set -euo pipefail
-        if [ "$(uname -s)-$(uname -m)" != "Linux-x86_64" ]; then
-          echo "::error::cargo-vet-action supports Linux x86_64 runners only (got $(uname -s)-$(uname -m))"
-          exit 1
-        fi
-        # Each binary is built from crates.io with Light Squares Attestable Builds
-        # and attached to the release cargo-vet-v<version> of this repository
-        # (see README). Add a line here when a new version is released.
-        case "$CARGO_VET_VERSION" in
-          0.10.2) sha256="8dda5da79b83f42d971dc5802ccfa998d4cdd6d7c7b2de44b26f3c9eaacb9372" ;;
-          0.10.0) sha256="fa006d3e8561c5a8e45933da45c1f6e73ab9771be98baf15bc8996ef9424c76e" ;;
-          *)
-            echo "::error::unsupported cargo-vet-version '$CARGO_VET_VERSION' (supported: 0.10.2, 0.10.0)"
-            exit 1 ;;
-        esac
-        file="cargo-vet-x86_64-unknown-linux-musl"
-        url="https://github.com/lightsquares/cargo-vet-action/releases/download/cargo-vet-v${CARGO_VET_VERSION}/${file}"
-        dir="$RUNNER_TEMP/cargo-vet-bin"
-        mkdir -p "$dir"
-        curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --retry 3 \
-          --output "$dir/cargo-vet" "$url"
-        echo "$sha256  $dir/cargo-vet" | sha256sum --check --strict --quiet -
-        chmod +x "$dir/cargo-vet"
-        echo "$dir" >> "$GITHUB_PATH"
-        echo "Installed cargo-vet $CARGO_VET_VERSION (sha256 $sha256)"
+      run: python3 "$GITHUB_ACTION_PATH/scripts/install_cargo_vet.py"
 
     - name: Run cargo vet
       shell: bash
@@ -63,65 +38,4 @@ runs:
       env:
         REGISTRIES: ${{ inputs.registries }}
         WARN_ONLY: ${{ inputs.unsafe-only-report-warnings }}
-      run: |
-        set -euo pipefail
-
-        registry_url() {
-          case "$1" in
-            google)             echo "https://raw.githubusercontent.com/google/supply-chain/main/audits.toml" ;;
-            mozilla)            echo "https://raw.githubusercontent.com/mozilla/supply-chain/main/audits.toml" ;;
-            bytecodealliance)   echo "https://raw.githubusercontent.com/bytecodealliance/wasmtime/main/supply-chain/audits.toml" ;;
-            lightsquares-canary) echo "https://app.lightsquares.dev/api/canary/audit-toml" ;;
-            *) return 1 ;;
-          esac
-        }
-
-        if [ -d supply-chain ]; then
-          args=(--locked)
-        else
-          mkdir supply-chain
-          {
-            echo '[cargo-vet]'
-            echo 'version = "0.10"'
-          } > supply-chain/config.toml
-          names=""
-          IFS=',' read -ra entries <<< "$REGISTRIES"
-          for entry in "${entries[@]}"; do
-            entry="${entry#"${entry%%[![:space:]]*}"}"
-            entry="${entry%"${entry##*[![:space:]]}"}"
-            [ -n "$entry" ] || continue
-            if [[ "$entry" == *=* ]]; then
-              name="${entry%%=*}"
-              url="${entry#*=}"
-            else
-              name="$entry"
-              url="$(registry_url "$name")" || {
-                echo "::error::unknown registry '$name' (use name=https://... for custom registries)"
-                exit 1
-              }
-            fi
-            if ! [[ "$name" =~ ^[A-Za-z0-9_-]+$ ]]; then
-              echo "::error::invalid registry name '$name'"
-              exit 1
-            fi
-            if ! [[ "$url" =~ ^https://[^[:space:]\"]+$ ]]; then
-              echo "::error::registry '$name' must have an https:// URL"
-              exit 1
-            fi
-            printf '\n[imports.%s]\nurl = "%s"\n' "$name" "$url" >> supply-chain/config.toml
-            names="$names $name"
-          done
-          echo '[audits]' > supply-chain/audits.toml
-          : > supply-chain/imports.lock
-          echo "::notice::No supply-chain/ directory found; bootstrapped a temporary store importing:${names:- (none)}. Run 'cargo vet init' locally to commit a real store."
-          args=()
-        fi
-
-        if cargo vet "${args[@]}"; then
-          exit 0
-        fi
-        if [ "$WARN_ONLY" = "true" ]; then
-          echo "::warning::cargo vet failed (see log); continuing because unsafe-only-report-warnings is enabled"
-          exit 0
-        fi
-        exit 1
+      run: python3 "$GITHUB_ACTION_PATH/scripts/run_cargo_vet.py"
