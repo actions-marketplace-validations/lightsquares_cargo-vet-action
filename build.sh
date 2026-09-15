@@ -1,8 +1,8 @@
 #!/bin/sh
 # Builds cargo-vet from crates.io inside the builder container (cwd = /workspace).
-# Usage: ./build.sh <cargo-vet version>   (set via build_cmd in lightsquares.toml)
+# Each build/cargo-vet-<version> branch carries its own copy with VERSION set.
 set -eu
-VERSION="${1:?usage: ./build.sh <cargo-vet version>}"
+VERSION=0.10.2
 OUT="dist/cargo-vet-${VERSION}-x86_64-unknown-linux-musl"
 
 cargo install --locked --version "$VERSION" --root /workspace/dist/install cargo-vet
