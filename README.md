@@ -30,7 +30,7 @@ Ubuntu runners provide.
 | Input | Description | Default | Example |
 |---|---|---|---|
 | `working-directory` | Directory containing the project's `Cargo.toml`. | `.` | `crates/my-service` |
-| `registries` | Registries to import when the project has no `supply-chain/` directory. Comma-separated known names or `name=url`. Ignored when `supply-chain/` exists. | `google,mozilla,bytecodealliance,lightsquares-canary` | `mozilla,acme=https://acme.example/audits.toml` |
+| `registries` | Registries to import when the project has no `supply-chain/` directory. Comma-separated known names or `name=url`. Ignored when `supply-chain/` exists. | `google, mozilla, bytecodealliance, lightsquares-canary` | `mozilla,acme=https://acme.example/audits.toml` |
 | `cargo-vet-version` | Which cargo-vet binary to run: `0.10.2` or `0.10.0`. | `0.10.2` | `0.10.0` |
 | `unsafe-only-report-warnings` | Turn a failing `cargo vet` into a workflow warning instead of a failed job. Unvetted code then reaches CI unnoticed unless someone reads the warnings, hence the name. | `false` | `true` |
 
