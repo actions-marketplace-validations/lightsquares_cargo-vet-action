@@ -14,6 +14,10 @@ inputs:
       bytecodealliance, lightsquares-canary. Custom: name=https://example.com/audits.toml
     required: false
     default: "google,mozilla,bytecodealliance,lightsquares-canary"
+  cargo-vet-version:
+    description: "cargo-vet version to run. Supported: 0.10.2 (default), 0.10.0"
+    required: false
+    default: "0.10.2"
   unsafe-only-report-warnings:
     description: "If true, an unvetted dependency set emits a warning instead of failing the job"
     required: false
@@ -25,25 +29,33 @@ runs:
     - name: Install cargo-vet
       shell: bash
       env:
-        # Built from crates.io with Light Squares Attestable Builds (see README).
-        # Bump all three together when releasing a new cargo-vet version.
-        CARGO_VET_VERSION: "0.10.2"
-        CARGO_VET_URL: "https://github.com/lightsquares/cargo-vet-action/releases/download/cargo-vet-v0.10.2/cargo-vet-x86_64-unknown-linux-musl"
-        CARGO_VET_SHA256: "TODO_FILL_IN_AFTER_ATTESTED_BUILD"
+        CARGO_VET_VERSION: ${{ inputs.cargo-vet-version }}
       run: |
         set -euo pipefail
         if [ "$(uname -s)-$(uname -m)" != "Linux-x86_64" ]; then
           echo "::error::cargo-vet-action supports Linux x86_64 runners only (got $(uname -s)-$(uname -m))"
           exit 1
         fi
+        # Each binary is built from crates.io with Light Squares Attestable Builds
+        # and attached to the release cargo-vet-v<version> of this repository
+        # (see README). Add a line here when a new version is released.
+        case "$CARGO_VET_VERSION" in
+          0.10.2) sha256="TODO_FILL_IN_AFTER_ATTESTED_BUILD_0_10_2" ;;
+          0.10.0) sha256="TODO_FILL_IN_AFTER_ATTESTED_BUILD_0_10_0" ;;
+          *)
+            echo "::error::unsupported cargo-vet-version '$CARGO_VET_VERSION' (supported: 0.10.2, 0.10.0)"
+            exit 1 ;;
+        esac
+        file="cargo-vet-${CARGO_VET_VERSION}-x86_64-unknown-linux-musl"
+        url="https://github.com/lightsquares/cargo-vet-action/releases/download/cargo-vet-v${CARGO_VET_VERSION}/${file}"
         dir="$RUNNER_TEMP/cargo-vet-bin"
         mkdir -p "$dir"
         curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --retry 3 \
-          --output "$dir/cargo-vet" "$CARGO_VET_URL"
-        echo "$CARGO_VET_SHA256  $dir/cargo-vet" | sha256sum --check --strict --quiet -
+          --output "$dir/cargo-vet" "$url"
+        echo "$sha256  $dir/cargo-vet" | sha256sum --check --strict --quiet -
         chmod +x "$dir/cargo-vet"
         echo "$dir" >> "$GITHUB_PATH"
-        echo "Installed cargo-vet $CARGO_VET_VERSION (sha256 $CARGO_VET_SHA256)"
+        echo "Installed cargo-vet $CARGO_VET_VERSION (sha256 $sha256)"
 
     - name: Run cargo vet
       shell: bash

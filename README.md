@@ -36,6 +36,7 @@ jobs:
 |---|---|---|
 | `working-directory` | `.` | Directory containing the project's `Cargo.toml`. |
 | `registries` | `google,mozilla,bytecodealliance,lightsquares-canary` | Registries to import when the project has no `supply-chain/` directory. Comma-separated; each entry is a known name or `name=https://…/audits.toml`. Ignored when `supply-chain/` exists. |
+| `cargo-vet-version` | `0.10.2` | Which cargo-vet binary to run. See [supported versions](#supported-cargo-vet-versions). |
 | `unsafe-only-report-warnings` | `false` | When `true`, a failing `cargo vet` produces a workflow warning instead of failing the job. Unvetted code then reaches CI unnoticed unless someone reads the warnings, hence the name. |
 
 ### Known registries
@@ -69,45 +70,76 @@ ready to adopt cargo-vet properly.
   toolchain via rustup; a project `rust-toolchain.toml` is honoured
   automatically.
 
-## How the binary is built
+### Supported cargo-vet versions
 
-`cargo-vet` is compiled from crates.io with `cargo install --locked` inside a
-hardware-attested enclave (AMD SEV-SNP) using the files in this repository:
+| Version | Release asset | Built from | Notes |
+|---|---|---|---|
+| `0.10.2` (default) | `cargo-vet-v0.10.2` | `main` | Current upstream release. |
+| `0.10.0` | `cargo-vet-v0.10.0` | tag `build/cargo-vet-0.10.0` | Skips audits that use `trusted-publisher` with a warning (80 of them in the `bytecodealliance` registry at the time of writing), so it covers fewer crates than 0.10.2. |
 
-- `lightsquares.toml` – build definition read by the platform
+Both are `0.10` store versions, so switching between them needs no changes
+to a committed `supply-chain/`.
+
+## How the binaries are built
+
+Every `cargo-vet` binary is compiled from crates.io with
+`cargo install --locked` inside a hardware-attested enclave (AMD SEV-SNP)
+using the files in this repository:
+
+- `lightsquares.toml` – build definition read by the platform; `build_cmd`
+  passes the version to build
 - `docker/Dockerfile` – toolchain image, pinned by digest
-- `build.sh` – the build itself
+- `build.sh <version>` – the build itself
 
 The platform hashes the resulting binary, signs a SLSA provenance statement
-with the CPU's attestation report, and logs it publicly. The binary is
-attached to a GitHub Release of this repository and `action.yml` refuses to
-run it unless its sha256 matches. Anyone can drop the release asset on
+with the CPU's attestation report, and logs it publicly. Each binary is
+attached to the GitHub Release `cargo-vet-v<version>` of this repository and
+`action.yml` refuses to run it unless its sha256 matches the one recorded for
+that version. Anyone can drop a release asset on
 <https://app.lightsquares.dev/verify> to confirm it came from this source.
 
-Reproduce the build locally with podman (or docker):
+`main` builds the newest supported version. Every other version has a tag
+`build/cargo-vet-<version>` whose `lightsquares.toml` points `head` at that
+tag and passes the version to `build.sh`, so each binary has its own
+immutable source ref and its own attestation.
+
+Reproduce a build locally with podman (or docker):
 
 ```bash
 podman build -t ab-builder -f Dockerfile docker/
-podman run --rm -v "$PWD:/workspace" -w /workspace ab-builder ./build.sh
-dist/cargo-vet-x86_64-unknown-linux-musl --version
+podman run --rm -v "$PWD:/workspace" -w /workspace ab-builder ./build.sh 0.10.2
+dist/cargo-vet-0.10.2-x86_64-unknown-linux-musl --version
 ```
 
-### Releasing a new cargo-vet version (maintainers)
+### Adding or updating a cargo-vet version (maintainers)
 
-1. Bump `CARGO_VET_VERSION` in `build.sh` and in `action.yml`, and update the
-   `CARGO_VET_URL` release tag. Test the build locally as above.
-2. Commit, push, and run the Attestable Build for this repository at
-   <https://app.lightsquares.dev/builds/run> with public visibility.
-3. Download the attested artifact from the build page and verify it at
+1. For the newest version, edit `build_cmd` and `artifacts` in
+   `lightsquares.toml` on `main`. For any other version, create a tag from
+   `main` whose only change is that file:
+
+   ```bash
+   git switch -c tmp main
+   sed -i -e 's/^head = "main"/head = "build\/cargo-vet-X.Y.Z"/' \
+          -e 's/0\.10\.2/X.Y.Z/g' lightsquares.toml
+   git commit -am "Build cargo-vet X.Y.Z"
+   git tag build/cargo-vet-X.Y.Z && git push origin build/cargo-vet-X.Y.Z
+   git switch main && git branch -D tmp
+   ```
+
+2. Test the build locally as above, then run the Attestable Build at
+   <https://app.lightsquares.dev/builds/run> for that branch or tag with
+   public visibility.
+3. Download the attested artifact and verify it at
    <https://app.lightsquares.dev/verify>.
 4. Create the release and attach the artifact:
 
    ```bash
-   gh release create cargo-vet-vX.Y.Z dist/cargo-vet-x86_64-unknown-linux-musl
+   gh release create cargo-vet-vX.Y.Z dist/cargo-vet-X.Y.Z-x86_64-unknown-linux-musl
    ```
 
-5. Put the artifact's sha256 into `CARGO_VET_SHA256` in `action.yml`, commit,
-   and move the `v1` tag once CI is green.
+5. On `main`, add the version and its sha256 to the `case` table in
+   `action.yml`, list it in this README and in the input description, and
+   move the `v1` tag once CI is green.
 
 ## License
 

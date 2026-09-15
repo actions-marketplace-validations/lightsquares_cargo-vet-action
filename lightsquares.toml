@@ -1,10 +1,13 @@
+# Builds the newest supported cargo-vet from main. Older versions are built
+# from tags named build/cargo-vet-<version>, whose copy of this file points
+# `head` at the tag and passes that version to build.sh (see README).
 [source]
 head = "main"
 shallow = true
 
 [build]
 path = "docker/Dockerfile"
-build_cmd = "./build.sh"
+build_cmd = "./build.sh 0.10.2"
 artifacts = [
-  "dist/cargo-vet-x86_64-unknown-linux-musl",
+  "dist/cargo-vet-0.10.2-x86_64-unknown-linux-musl",
 ]

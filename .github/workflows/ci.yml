@@ -49,3 +49,12 @@ jobs:
           working-directory: tests/unvetted
           registries: ""
           unsafe-only-report-warnings: "true"
+
+  older-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./
+        with:
+          working-directory: tests/existing-store
+          cargo-vet-version: "0.10.0"
