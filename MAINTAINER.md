@@ -73,8 +73,7 @@ dist/cargo-vet-x86_64-unknown-linux-musl --version
 
 ## Tests
 
-`.github/workflows/ci.yml` runs the action against the fixtures in `tests/`:
-a committed store checked with `--locked`, a bootstrap with the default
-registries, an unvetted dependency that must fail, the same in warn-only
-mode, and the locked fixture with cargo-vet 0.10.0. The jobs only pass once
-the release assets referenced in `action.yml` exist.
+`tests/` holds fixture projects for the action: a committed store to check
+with `--locked`, a dependency-free project for bootstrap mode, and an
+unvetted dependency that must fail. There is no CI workflow wired up at the
+moment; run the action's steps against the fixtures by hand.
