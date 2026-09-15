@@ -4,6 +4,5 @@
 [cargo-vet]
 version = "0.10"
 
-[[exemptions.cfg-if]]
-version = "1.0.0"
-criteria = "safe-to-deploy"
+[imports.lightsquares-canary]
+url = "https://app.lightsquares.dev/api/canary/audit-toml"

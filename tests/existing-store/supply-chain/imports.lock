@@ -1,2 +1,14 @@
 
 # cargo-vet imports lock
+
+[[audits.lightsquares-canary.audits.anyhow]]
+who = "Dependency Canary (automated)"
+criteria = "safe-to-deploy"
+version = "1.0.99"
+notes = "Baseline check by Light Squares' Dependency Canary: https://app.lightsquares.dev/canary/audit/f4c653fd-3b1c-4444-948b-479055344e55"
+
+[[audits.lightsquares-canary.audits.anyhow]]
+who = "Dependency Canary (automated)"
+criteria = "safe-to-deploy"
+delta = "1.0.99 -> 1.0.104"
+notes = "Baseline check by Light Squares' Dependency Canary: https://app.lightsquares.dev/canary/audit/8fda5e26-ccc3-4215-b581-290a3d5762ef"

@@ -74,8 +74,8 @@ dist/cargo-vet-x86_64-unknown-linux-musl --version
 ## Tests
 
 `.github/workflows/ci.yml` runs the action against the fixtures in `tests/`
-in a single job: a committed store checked with `--locked`, a
-dependency-free project bootstrapped from the default registries, the same
-committed store with cargo-vet 0.10.0, and an unvetted dependency that must
-fail. It needs the release assets referenced in `action.yml` to be
-downloadable.
+in a single job: a committed store whose only dependency is covered by an
+imported registry, checked with `--locked` using both cargo-vet versions,
+a dependency-free project bootstrapped from the default registries, and
+the same `anyhow` dependency with no registries, which must fail. It
+needs the release assets referenced in `action.yml` to be downloadable.
