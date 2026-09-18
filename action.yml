@@ -13,7 +13,7 @@ inputs:
       supply-chain/ directory yet. Known names: google, mozilla,
       bytecodealliance, lightsquares-canary. Custom: name=https://example.com/audits.toml
     required: false
-    default: "google,mozilla,bytecodealliance,lightsquares-canary"
+    default: "google,mozilla,bytecodealliance"
   cargo-vet-version:
     description: "cargo-vet version to run. Supported: 0.10.2 (default), 0.10.0"
     required: false

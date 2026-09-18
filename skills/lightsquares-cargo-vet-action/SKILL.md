@@ -36,7 +36,7 @@ Inputs (all optional):
 | Input | Default | Use |
 |---|---|---|
 | `working-directory` | `.` | Directory with the project's `Cargo.toml`. |
-| `registries` | `google,mozilla,bytecodealliance,lightsquares-canary` | Registries to import when there is no `supply-chain/`. Known names or `name=https://…/audits.toml`. |
+| `registries` | `google,mozilla,bytecodealliance` | Registries to import when there is no `supply-chain/`. Known names or `name=https://…/audits.toml`. |
 | `cargo-vet-version` | `0.10.2` | `0.10.2` or `0.10.0`. |
 | `unsafe-only-report-warnings` | `false` | `true` turns a failed vet into a workflow warning. Only for a transition period. |
 
