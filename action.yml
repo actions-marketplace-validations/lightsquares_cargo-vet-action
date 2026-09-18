@@ -2,6 +2,10 @@ name: "cargo vet"
 description: "Install cargo-vet from an attested build and run `cargo vet` on a Rust project"
 author: "Light Squares"
 
+branding:
+  icon: "check-square"
+  color: "purple"
+
 inputs:
   working-directory:
     description: "Directory containing the project's Cargo.toml"
